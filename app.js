@@ -28,6 +28,8 @@ const STORAGE_KEYS = {
   VOICE_ACCENT: 'vocab_ai_voice_accent'
 };
 
+const GEMINI_API_ENDPOINT = window.VOCAB_GEMINI_API_URL || '/api/gemini';
+
 // ==============================================================
 // 1. INITIALIZATION & SETUP
 // ==============================================================
@@ -180,7 +182,7 @@ async function callGeminiAPI(word) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
 
-      const response = await fetch('/api/gemini', {
+      const response = await fetch(GEMINI_API_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1308,7 +1310,7 @@ async function testAPIKeyConnection() {
   statusEl.classList.remove('hidden');
 
   try {
-    const response = await fetch('/api/gemini', {
+    const response = await fetch(GEMINI_API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'test', model })

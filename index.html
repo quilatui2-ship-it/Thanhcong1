@@ -456,7 +456,7 @@
       <div class="space-y-4 py-4">
         <div class="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 border border-brand-100 dark:border-brand-900/60">
           <p class="text-xs font-semibold text-brand-900 dark:text-brand-200">API key được giữ ở máy chủ, không gửi xuống trình duyệt.</p>
-          <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">Netlify: đặt <code class="font-mono">GEMINI_API_KEY</code> ở Production, lưu rồi Trigger deploy mới. Sau đó nhấn “Kiểm tra kết nối”.</p>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">Có thể dùng Netlify Function hoặc Cloudflare Worker. API key phải được đặt ở Secret phía máy chủ; xem README để cấu hình Worker và URL.</p>
         </div>
 
         <!-- AI Model Selection -->
@@ -578,6 +578,7 @@
 
   <!-- Scripts -->
   <script src="sample-data.js"></script>
+  <script src="api-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

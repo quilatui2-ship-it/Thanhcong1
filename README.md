@@ -60,16 +60,25 @@ Gemini được gọi qua máy chủ cục bộ; không mở trực tiếp `inde
 3. Đóng/mở lại terminal rồi chạy **`start.bat`**. Máy chủ chỉ lắng nghe trên máy tính của bạn (`127.0.0.1`); key không được gửi xuống trình duyệt hay lưu trong repository.
 4. Lần tra từ đầu tiên sẽ tự gọi Gemini 3.1 Flash-Lite ở chế độ nền. Có thể dùng **Cài đặt API → Kiểm tra kết nối** để xác nhận máy chủ.
 
-### Triển khai trên Netlify
-Code kết nối Netlify Function đã có sẵn. Chỉ cần cấu hình key một lần cho bản Production:
+### Khuyên dùng khi chia sẻ website: Cloudflare Worker
+Website vẫn có thể nằm trên Netlify; chỉ phần gọi Gemini chạy qua Worker để giữ API key ở server.
 
-![Sơ đồ cấu hình Gemini API key cho Netlify Production](./docs/netlify-gemini-setup.svg)
+1. Cloudflare Dashboard → **Workers & Pages → Create → Create Worker**. Tạo Worker tên, ví dụ `vocab-gemini-api`.
+2. Mở Worker → **Edit code**. Thay nội dung bằng toàn bộ file [`cloudflare/worker.mjs`](./cloudflare/worker.mjs), rồi **Deploy**.
+3. Worker → **Settings → Variables and Secrets → Add variable**:
+   - Tạo secret tên `GEMINI_API_KEY`, nhập API key mới.
+   - Tạo variable tên `ALLOWED_ORIGINS`, giá trị là origin website chính xác, ví dụ `https://ten-site.netlify.app` (không thêm dấu `/` cuối). Với domain riêng, nhập nhiều origin phân tách bằng dấu phẩy.
+   - **Không** nhập API key vào `ALLOWED_ORIGINS`, file code, hay chat.
+4. Bấm **Deploy** lại để áp dụng secret/variable. URL thường có dạng `https://vocab-gemini-api.ten-tai-khoan.workers.dev`.
+5. Trong file [`api-config.js`](./api-config.js), thay dòng endpoint bằng URL Worker thật:
+   ```js
+   window.VOCAB_GEMINI_API_URL = 'https://vocab-gemini-api.ten-tai-khoan.workers.dev/api/gemini';
+   ```
+6. Commit/push lên GitHub để Netlify tự deploy trang với endpoint mới. Deploy xong, mở website → **Cài đặt API → Kiểm tra kết nối**.
 
-1. Netlify → chọn đúng site → **Site configuration → Environment variables → Add a variable**.
-2. **Key/name:** `GEMINI_API_KEY`. Chọn **Different value for each deploy context**, dán key mới vào ô **Production**. Có thể để trống Deploy Previews, Branch deploys và Local development nếu không dùng các môi trường đó. Đừng để key chỉ ở Local development.
-3. Bấm **Create variable** để lưu. Vào **Deploys → Trigger deploy → Deploy site** để áp dụng key vào Function.
-4. Mở URL website Netlify sau khi deploy xong → **Cài đặt API → Kiểm tra kết nối**. Khi thành công, lần tra từ sẽ tự gọi Gemini 3.1 Flash-Lite. Nút kiểm tra báo thiếu key thì kiểm tra lại ô Production và deploy lại.
+Worker giới hạn model, kiểm tra origin và định dạng từ/cụm từ. Giới hạn trong bộ nhớ của Worker chỉ là lớp giảm tải cơ bản; hãy bật Cloudflare rate limiting phù hợp và đặt quota/budget cho Gemini API để bảo vệ khỏi lạm dụng. Nếu UI báo lỗi, Worker trả nội dung lỗi Gemini để dễ phân biệt lỗi key, quota, model hay kết nối.
 
-Khi GitHub đã kết nối với Netlify, các commit mới lên nhánh Production (thường là `main`) sẽ tự deploy. Function được gắn trực tiếp vào `/api/gemini` và dùng Node.js 20. Nếu dùng tên miền riêng, thêm origin vào `GEMINI_ALLOWED_ORIGINS` (phân tách bằng dấu phẩy). Đặt quota/budget cho API key trong Google AI Studio/Google Cloud.
+### Phương án khác: Netlify Function
+Nếu muốn chỉ dùng Netlify, có thể cấu hình `GEMINI_API_KEY` trong **Site configuration → Environment variables**, chọn context **Production**, lưu rồi trigger deploy mới. Function hiện được gắn trực tiếp vào `/api/gemini` và dùng Node.js 20. Nếu vẫn gặp lỗi 502, ưu tiên dùng Cloudflare Worker ở trên và xem **Netlify → Functions → Logs** để biết nguyên nhân phía Netlify.
 
 Nếu key đã từng được gửi trong chat hoặc commit, hãy thu hồi key đó và tạo key mới trước khi cấu hình. Khi Gemini không khả dụng, ứng dụng sẽ thử từ điển dự phòng.
