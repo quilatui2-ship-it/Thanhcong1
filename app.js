@@ -1344,6 +1344,10 @@ function getApiErrorMessage(error) {
     return 'Netlify chưa nhận GEMINI_API_KEY: đặt key trong Environment variables cho Production, lưu lại rồi Trigger deploy mới.';
   }
 
+  if (error.status === 502 && /^HTTP 502$/.test(error.message)) {
+    return 'Netlify Function trả HTTP 502. Mở Netlify → Functions → Logs để xem lỗi khởi chạy; kiểm tra deploy mới nhất đã dùng Node.js 20.';
+  }
+
   return error.message || 'Lỗi kết nối không xác định.';
 }
 

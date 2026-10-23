@@ -8,6 +8,10 @@ const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
 const requestWindows = new Map();
 
+export const config = {
+  path: "/api/gemini"
+};
+
 function isRateLimited(ip) {
   const now = Date.now();
   const recentRequests = (requestWindows.get(ip) || []).filter((time) => now - time < RATE_WINDOW_MS);

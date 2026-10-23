@@ -1,7 +1,5 @@
 [functions]
   directory = "netlify/functions"
 
-[[redirects]]
-  from = "/api/gemini"
-  to = "/.netlify/functions/gemini"
-  status = 200
+[build.environment]
+  NODE_VERSION = "20"

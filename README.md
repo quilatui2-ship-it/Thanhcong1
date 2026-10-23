@@ -70,6 +70,6 @@ Code kết nối Netlify Function đã có sẵn. Chỉ cần cấu hình key m�
 3. Bấm **Create variable** để lưu. Vào **Deploys → Trigger deploy → Deploy site** để áp dụng key vào Function.
 4. Mở URL website Netlify sau khi deploy xong → **Cài đặt API → Kiểm tra kết nối**. Khi thành công, lần tra từ sẽ tự gọi Gemini 3.1 Flash-Lite. Nút kiểm tra báo thiếu key thì kiểm tra lại ô Production và deploy lại.
 
-Khi GitHub đã kết nối với Netlify, các commit mới lên nhánh Production (thường là `main`) sẽ tự deploy. `netlify.toml` định tuyến `/api/gemini` tới Function. Nếu dùng tên miền riêng, thêm origin vào `GEMINI_ALLOWED_ORIGINS` (phân tách bằng dấu phẩy). Đặt quota/budget cho API key trong Google AI Studio/Google Cloud.
+Khi GitHub đã kết nối với Netlify, các commit mới lên nhánh Production (thường là `main`) sẽ tự deploy. Function được gắn trực tiếp vào `/api/gemini` và dùng Node.js 20. Nếu dùng tên miền riêng, thêm origin vào `GEMINI_ALLOWED_ORIGINS` (phân tách bằng dấu phẩy). Đặt quota/budget cho API key trong Google AI Studio/Google Cloud.
 
 Nếu key đã từng được gửi trong chat hoặc commit, hãy thu hồi key đó và tạo key mới trước khi cấu hình. Khi Gemini không khả dụng, ứng dụng sẽ thử từ điển dự phòng.
