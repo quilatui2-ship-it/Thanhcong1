@@ -12,7 +12,7 @@ const STATE = {
   historySearchQuery: '',
   audioSpeed: 1.0,
   defaultVoiceAccent: 'en-US',
-  selectedModel: 'gemini-flash-lite-latest',
+  selectedModel: 'gemini-3.1-flash-lite',
   apiKey: '',
   isSidebarOpen: true,
   flashcardIndex: 0,
@@ -63,7 +63,7 @@ function loadSettings() {
 
   let savedModel = localStorage.getItem(STORAGE_KEYS.MODEL);
   if (!savedModel || savedModel.includes('2.5') || savedModel.includes('2.0')) {
-    savedModel = 'gemini-flash-lite-latest';
+    savedModel = 'gemini-3.1-flash-lite';
     localStorage.setItem(STORAGE_KEYS.MODEL, savedModel);
   }
   STATE.selectedModel = savedModel;
@@ -167,10 +167,10 @@ async function fetchWordFromAI(word, forceRefresh = false) {
  */
 async function callGeminiAPI(word) {
   const apiKey = STATE.apiKey.trim();
-  let model = STATE.selectedModel || 'gemini-flash-lite-latest';
+  let model = STATE.selectedModel || 'gemini-3.1-flash-lite';
   // Filter out retired models
   if (model.includes('2.5') || model.includes('2.0') || model.includes('1.5')) {
-    model = 'gemini-flash-lite-latest';
+    model = 'gemini-3.1-flash-lite';
   }
 
   // Prompt bao gồm schema ngay trong user message để không cần systemInstruction
@@ -1289,7 +1289,7 @@ function bindEvents() {
 
   document.getElementById('resetSettingsBtn').addEventListener('click', () => {
     STATE.apiKey = '';
-    STATE.selectedModel = 'gemini-flash-lite-latest';
+    STATE.selectedModel = 'gemini-3.1-flash-lite';
     STATE.defaultVoiceAccent = 'en-US';
 
     document.getElementById('apiKeyInput').value = STATE.apiKey;
@@ -1298,7 +1298,7 @@ function bindEvents() {
 
     document.getElementById('apiKeyInput').value = '';
     localStorage.removeItem(STORAGE_KEYS.API_KEY);
-    localStorage.setItem(STORAGE_KEYS.MODEL, 'gemini-flash-lite-latest');
+    localStorage.setItem(STORAGE_KEYS.MODEL, 'gemini-3.1-flash-lite');
     localStorage.removeItem(STORAGE_KEYS.VOICE_ACCENT);
 
     showToast('Đã khôi phục cài đặt mặc định!', 'info');
