@@ -61,8 +61,9 @@ Gemini được gọi qua máy chủ cục bộ; không mở trực tiếp `inde
 4. Lần tra từ đầu tiên sẽ tự gọi Gemini 3.1 Flash-Lite ở chế độ nền. Có thể dùng **Cài đặt API → Kiểm tra kết nối** để xác nhận máy chủ.
 
 ### Triển khai trên Netlify
-1. Trong Netlify, mở **Site configuration → Environment variables** và tạo `GEMINI_API_KEY` với một API key mới. Không ghi key trong file dự án hoặc gửi qua chat.
-2. Triển khai repository lên Netlify. `netlify.toml` định tuyến `/api/gemini` tới Netlify Function.
-3. Netlify Function chỉ chấp nhận Origin của site đã triển khai, giới hạn model và chỉ nhận từ/cụm từ để tự tạo prompt. Nếu dùng tên miền riêng, thêm danh sách origin (phân tách bằng dấu phẩy) trong biến `GEMINI_ALLOWED_ORIGINS`. Vì endpoint vẫn phục vụ người truy cập website, hãy đặt quota/budget cho API key trong Google AI Studio/Google Cloud và thu hồi key nếu bị lộ.
+1. Trong Netlify, mở **Site configuration → Environment variables** và tạo `GEMINI_API_KEY` với một API key mới. Nếu chọn **Different value for each deploy context**, bắt buộc nhập key vào ô **Production** để website chính dùng được; chỉ nhập ở **Local development** thì bản deploy sẽ không nhận được key. Không đặt key trong Local development nếu không cần Netlify CLI vì Netlify ghi rõ giá trị ở context này không được xem là secret.
+2. Lưu biến môi trường rồi **trigger deploy mới** (hoặc redeploy) để Netlify Function nhận cấu hình. `netlify.toml` định tuyến `/api/gemini` tới Netlify Function.
+3. Có thể để trống **Deploy Previews** và **Branch deploys** nếu không cần dùng Gemini ở các bản preview/nhánh đó. Nếu chọn cùng một giá trị cho tất cả deploy contexts, các context sẽ cùng dùng key.
+4. Netlify Function chỉ chấp nhận Origin của site đã triển khai, giới hạn model và chỉ nhận từ/cụm từ để tự tạo prompt. Nếu dùng tên miền riêng, thêm danh sách origin (phân tách bằng dấu phẩy) trong biến `GEMINI_ALLOWED_ORIGINS`. Vì endpoint vẫn phục vụ người truy cập website, hãy đặt quota/budget cho API key trong Google AI Studio/Google Cloud và thu hồi key nếu bị lộ.
 
 Nếu key đã từng được gửi trong chat hoặc commit, hãy thu hồi key đó và tạo key mới trước khi cấu hình. Khi Gemini không khả dụng, ứng dụng sẽ thử từ điển dự phòng.
