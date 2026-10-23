@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Vocab Master - Tra Từ Điển & Lịch Sử Thông Minh</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Canvas Confetti for Streaks -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased flex flex-col transition-colors duration-200 overflow-hidden">
+
+  <!-- Top Navigation Bar -->
+  <header class="h-16 border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 md:px-6 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <!-- Sidebar Toggle (Mobile / Desktop collapse) -->
+      <button id="toggleSidebarBtn" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Ẩn/Hiện thanh lịch sử">
+        <i data-lucide="panel-left-close" id="sidebarIcon" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Logo & App Name -->
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="showWelcomeScreen()">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="font-bold text-lg leading-tight bg-gradient-to-r from-brand-600 to-indigo-500 bg-clip-text text-transparent flex items-center gap-1.5">
+            VocabAI <span class="text-xs px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-brand-300 font-semibold uppercase tracking-wider">Gemini Pro</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tra cứu & Lịch sử học tập thông minh</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions in Topbar -->
+    <div class="flex items-center gap-2">
+      <!-- Flashcard Mode Button -->
+      <button id="openFlashcardBtn" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60 transition border border-indigo-200/60 dark:border-indigo-800/60 shadow-sm" title="Ôn tập từ vựng đã tra">
+        <i data-lucide="layers" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+        <span>Luyện Flashcards</span>
+        <span id="flashcardCountBadge" class="px-1.5 py-0.2 text-[10px] rounded-full bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-100 font-bold">0</span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button id="themeToggleBtn" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Chuyển chế độ Sáng / Tối">
+        <i data-lucide="moon" id="themeIcon" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Settings Button -->
+      <button id="openSettingsBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Cài đặt AI & API Key">
+        <i data-lucide="settings" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+        <span class="hidden md:inline">Cài đặt API</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container: Sidebar + Content -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- ============================================================== -->
+    <!-- LEFT SIDEBAR: Lịch sử tra cứu (Nhóm theo Năm rồi Ngày) -->
+    <!-- ============================================================== -->
+    <aside id="historySidebar" class="w-80 md:w-84 border-r border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex flex-col shrink-0 transition-all duration-300 z-20 h-full relative">
+      
+      <!-- Sidebar Header -->
+      <div class="p-3.5 border-b border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+            <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+          </div>
+          <span class="font-bold text-sm text-slate-800 dark:text-slate-200">Lịch sử tra cứu</span>
+          <span id="historyTotalCount" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">0 từ</span>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <!-- Filter Favorites -->
+          <button id="filterFavoritesBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition" title="Chỉ xem từ đã đánh dấu sao">
+            <i data-lucide="star" class="w-4 h-4"></i>
+          </button>
+          <!-- Export Data -->
+          <button id="exportHistoryBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition" title="Xuất lịch sử (CSV/JSON)">
+            <i data-lucide="download" class="w-4 h-4"></i>
+          </button>
+          <!-- Clear History -->
+          <button id="clearHistoryBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" title="Xóa lịch sử">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search in History -->
+      <div class="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/50">
+        <div class="relative">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="historySearchInput" placeholder="Tìm nhanh trong lịch sử..." class="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-slate-100/80 dark:bg-slate-800/60 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition">
+          <button id="clearHistorySearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Grouped History List (Tree: Year -> Date -> Words) -->
+      <div id="historyTreeContainer" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-3">
+        <!-- Dynamic content rendered by JS -->
+      </div>
+
+      <!-- History Footer / Quick Stats -->
+      <div class="p-3 border-t border-slate-200/70 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/40">
+        <span id="streakInfo">🔥 Chuỗi học: <b class="text-brand-600 dark:text-brand-400">1 ngày</b></span>
+        <button id="sampleDataBtn" class="text-brand-600 dark:text-brand-400 hover:underline font-medium">Nạp từ mẫu</button>
+      </div>
+    </aside>
+
+    <!-- ============================================================== -->
+    <!-- MAIN CONTENT AREA -->
+    <!-- ============================================================== -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-slate-50/60 dark:bg-slate-950 custom-scrollbar">
+
+      <!-- Search Input Section -->
+      <section class="max-w-4xl w-full mx-auto px-4 md:px-8 pt-6 pb-4 shrink-0">
+        <form id="searchForm" class="relative group">
+          <div class="flex items-center gap-2 p-2 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200/80 dark:border-slate-800 focus-within:border-brand-500 dark:focus-within:border-brand-500 shadow-lg shadow-slate-200/50 dark:shadow-none transition-all duration-300">
+            
+            <!-- Left Search Icon / Spinner -->
+            <div class="pl-3 pr-1 text-slate-400 flex items-center justify-center">
+              <i data-lucide="search" id="searchIconDefault" class="w-5 h-5 text-brand-600 dark:text-brand-400"></i>
+              <div id="searchSpinner" class="hidden animate-spin w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full"></div>
+            </div>
+
+            <!-- Input Field -->
+            <input 
+              type="text" 
+              id="wordInput" 
+              placeholder="Nhập từ hoặc cụm từ tiếng Anh muốn tra (ví dụ: resilience, ubiquitous, pragmatic)..." 
+              autocomplete="off"
+              autofocus
+              class="w-full py-2 px-1 text-base md:text-lg font-medium text-slate-900 dark:text-slate-100 bg-transparent outline-none placeholder:text-slate-400 placeholder:font-normal"
+            >
+
+            <!-- Clear Input Button -->
+            <button type="button" id="clearInputBtn" class="hidden p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition" title="Xóa">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Submit Button -->
+            <button 
+              type="submit" 
+              id="submitBtn"
+              class="px-5 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/25 hover:from-brand-700 hover:to-indigo-700 active:scale-95 transition flex items-center gap-2 shrink-0"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Dịch với AI</span>
+              <span class="hidden sm:inline-block text-[10px] py-0.5 px-1.5 bg-white/20 rounded font-mono">↵</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Trending Suggestions -->
+        <div class="mt-3 flex items-center gap-2 text-xs flex-wrap">
+          <span class="text-slate-400 dark:text-slate-500 flex items-center gap-1">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Gợi ý từ hay:
+          </span>
+          <div class="flex items-center gap-1.5 flex-wrap" id="quickSuggestions">
+            <button class="quick-word px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition">resilience</button>
+            <button class="quick-word px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition">serendipity</button>
+            <button class="quick-word px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition">eloquent</button>
+            <button class="quick-word px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition">pragmatic</button>
+            <button class="quick-word px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition">ubiquitous</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Word Display Container -->
+      <section class="max-w-4xl w-full mx-auto px-4 md:px-8 pb-12 flex-1 flex flex-col">
+
+        <!-- Welcome Placeholder (When no word is selected) -->
+        <div id="welcomePlaceholder" class="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800/80 rounded-3xl my-4 bg-white/40 dark:bg-slate-900/40">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4 shadow-sm">
+            <i data-lucide="book-open-check" class="w-8 h-8"></i>
+          </div>
+          <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Sẵn sàng khám phá từ vựng cùng AI</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed mb-6">
+            Nhập bất kỳ từ tiếng Anh nào để nhận ngay phân tích ngữ nghĩa chuyên sâu: phiên âm chuẩn, câu ví dụ thực tế, phát âm bản ngữ và bảng liên kết các từ loại (danh từ, động từ, tính từ, trạng từ).
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg text-left">
+            <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-xs mb-1">
+                <i data-lucide="volume-2" class="w-4 h-4"></i> Phát âm & Nghe
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Giọng đọc Anh - Anh và Anh - Mỹ kèm phiên âm IPA chuẩn xác.</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-xs mb-1">
+                <i data-lucide="git-fork" class="w-4 h-4"></i> Các từ loại liên quan
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Họ từ (Word Family): Noun, Verb, Adj, Adv liên kết chỉ bằng 1 cú click.</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold text-xs mb-1">
+                <i data-lucide="calendar" class="w-4 h-4"></i> Lịch sử Năm & Ngày
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Thanh cột bên trái tự động gom nhóm theo năm và từng ngày tra cứu.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Card (Shown when word is active) -->
+        <div id="wordResultCard" class="hidden space-y-5 animate-fade-in">
+          
+          <!-- Main Word Header Banner -->
+          <div class="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-brand-500/5 blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <h1 id="resultWord" class="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight">resilience</h1>
+                  <span id="resultPosBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300">noun</span>
+                  <span id="resultCefrBadge" class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">B2</span>
+                </div>
+
+                <!-- Phonetics & Pronunciation Audio Buttons -->
+                <div class="flex items-center gap-4 mt-3 flex-wrap">
+                  <!-- UK Audio -->
+                  <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl">
+                    <span class="text-[11px] font-bold text-rose-500">UK</span>
+                    <span id="resultPhoneticUk" class="font-mono text-xs text-slate-600 dark:text-slate-300">/rɪˈzɪl.jəns/</span>
+                    <button id="playAudioUkBtn" class="p-1 rounded-lg text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-700 transition" title="Nghe phát âm Anh - Anh">
+                      <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+
+                  <!-- US Audio -->
+                  <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl">
+                    <span class="text-[11px] font-bold text-sky-500">US</span>
+                    <span id="resultPhoneticUs" class="font-mono text-xs text-slate-600 dark:text-slate-300">/rɪˈzɪl.jəns/</span>
+                    <button id="playAudioUsBtn" class="p-1 rounded-lg text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-700 transition" title="Nghe phát âm Anh - Mỹ">
+                      <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+
+                  <!-- Slow Audio Toggle -->
+                  <button id="toggleAudioSpeedBtn" class="text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 transition">
+                    Tốc độ: <span id="audioSpeedText" class="font-semibold text-brand-600">1.0x</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action Buttons (Favorite, Copy, Lookup Date) -->
+              <div class="flex items-center gap-2 self-start md:self-auto">
+                <button id="cardFavoriteBtn" class="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition border border-transparent shadow-sm" title="Lưu từ yêu thích">
+                  <i data-lucide="star" class="w-5 h-5"></i>
+                </button>
+                <button id="copyWordBtn" class="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition border border-transparent shadow-sm" title="Sao chép từ & nghĩa">
+                  <i data-lucide="copy" class="w-5 h-5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Lookup Timestamp info -->
+            <div class="mt-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                <span>Đã lưu vào lịch sử: <b id="resultLookupDate" class="text-slate-600 dark:text-slate-300 font-semibold">2026 - 23/10</b> lúc <span id="resultLookupTime">13:30</span></span>
+              </div>
+              <div id="aiSourceIndicator" class="flex items-center gap-1 text-[11px] text-brand-600 dark:text-brand-400">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Gemini AI
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Word Family / Các từ loại liên quan (Quan trọng) -->
+          <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+                  <i data-lucide="git-fork" class="w-4 h-4"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Các từ loại liên quan (Word Family)</h3>
+              </div>
+              <span class="text-xs text-slate-400">Nhấp vào từ để tra ngay</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="wordFamilyContainer">
+              <!-- Noun Box -->
+              <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <i data-lucide="bookmark" class="w-3 h-3"></i> Danh từ (Noun)
+                </div>
+                <div id="familyNounList" class="flex flex-wrap gap-1.5">
+                  <span class="text-xs text-slate-400 italic">Không có</span>
+                </div>
+              </div>
+
+              <!-- Verb Box -->
+              <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <i data-lucide="zap" class="w-3 h-3"></i> Động từ (Verb)
+                </div>
+                <div id="familyVerbList" class="flex flex-wrap gap-1.5">
+                  <span class="text-xs text-slate-400 italic">Không có</span>
+                </div>
+              </div>
+
+              <!-- Adjective Box -->
+              <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <i data-lucide="tag" class="w-3 h-3"></i> Tính từ (Adjective)
+                </div>
+                <div id="familyAdjList" class="flex flex-wrap gap-1.5">
+                  <span class="text-xs text-slate-400 italic">Không có</span>
+                </div>
+              </div>
+
+              <!-- Adverb Box -->
+              <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800">
+                <div class="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <i data-lucide="compass" class="w-3 h-3"></i> Trạng từ (Adverb)
+                </div>
+                <div id="familyAdvList" class="flex flex-wrap gap-1.5">
+                  <span class="text-xs text-slate-400 italic">Không có</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Nghĩa chi tiết & Câu ví dụ thực tế -->
+          <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <i data-lucide="list-ordered" class="w-4 h-4"></i>
+              </div>
+              <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Nghĩa và Ví dụ minh họa</h3>
+            </div>
+
+            <!-- List of Meanings -->
+            <div id="meaningsContainer" class="space-y-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Section: Cụm từ thường gặp (Collocations) & Mẹo ghi nhớ -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            
+            <!-- Collocations & Idioms -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center gap-2 mb-3">
+                <div class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Cụm từ hay gặp (Collocations)</h3>
+              </div>
+              <div id="collocationsContainer" class="space-y-2">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Memory Tip / Etymology & Synonyms -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                  </div>
+                  <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">Mẹo ghi nhớ từ vựng</h3>
+                </div>
+                <div id="memoryTipText" class="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-xs md:text-sm text-amber-900 dark:text-amber-200 leading-relaxed mb-4">
+                  Gốc từ hoặc mẹo liên tưởng giúp ghi nhớ lâu.
+                </div>
+              </div>
+
+              <!-- Synonyms & Antonyms -->
+              <div class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Từ đồng nghĩa (Synonyms):</span>
+                  <div id="synonymsList" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div>
+                  <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">Từ trái nghĩa (Antonyms):</span>
+                  <div id="antonymsList" class="flex flex-wrap gap-1.5"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CÀI ĐẶT API & TÙY CHỌN -->
+  <!-- ============================================================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative animate-scale-up">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <i data-lucide="cpu" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-slate-100">Cấu hình Gemini AI</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Thiết lập API key và mô hình dịch thuật</p>
+          </div>
+        </div>
+        <button id="closeSettingsBtn" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 py-4">
+        <!-- API Key Input -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Gemini API Key</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="apiKeyInput" 
+              placeholder="Dán mã API key của bạn vào đây..." 
+              class="w-full pl-3 pr-20 py-2.5 text-xs font-mono rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-brand-500 focus:outline-none transition"
+            >
+            <button type="button" id="toggleApiKeyVisibility" class="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Ẩn/Hiện">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+            <button type="button" id="pasteApiKeyBtn" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-semibold px-1" title="Dán từ Clipboard">
+              Dán
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-brand-500 shrink-0"></i>
+            <span>Key được lưu an toàn tại máy bạn (LocalStorage). Nếu chưa có key, bạn có thể lấy tại <a href="https://aistudio.google.com/" target="_blank" class="text-brand-600 underline">Google AI Studio</a>.</span>
+          </p>
+        </div>
+
+        <!-- AI Model Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Chọn phiên bản mô hình</label>
+          <select id="modelSelect" class="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-brand-500 focus:outline-none transition font-medium">
+            <option value="gemini-3.8-flash" selected>Gemini 3.8 Flash (Khuyên dùng - Mới nhất & Siêu nhanh)</option>
+            <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Bản nhẹ)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Học thuật sâu)</option>
+          </select>
+        </div>
+
+        <!-- Voice Accent Preference -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Giọng đọc phát âm mặc định</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-slate-50 dark:bg-slate-800/50 hover:border-brand-500 transition">
+              <input type="radio" name="accentVoice" value="en-US" checked class="text-brand-600 focus:ring-brand-500">
+              <span class="text-xs font-semibold">Anh - Mỹ (US English)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer bg-slate-50 dark:bg-slate-800/50 hover:border-brand-500 transition">
+              <input type="radio" name="accentVoice" value="en-GB" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-xs font-semibold">Anh - Anh (UK English)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Connection Test Status -->
+        <div id="apiTestStatus" class="hidden p-3 rounded-xl text-xs flex items-center gap-2"></div>
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+        <button id="testApiKeyBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+          <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i> Kiểm tra kết nối
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="resetSettingsBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition">
+            Khôi phục mặc định
+          </button>
+          <button id="saveSettingsBtn" class="px-5 py-2 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-500/20 transition">
+            Lưu cài đặt
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: FLASHCARD HỌC TỪ THEO NGÀY / NĂM -->
+  <!-- ============================================================== -->
+  <div id="flashcardModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative animate-scale-up flex flex-col">
+      
+      <!-- Flashcard Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 dark:text-slate-100">Luyện Flashcards</h3>
+            <p id="flashcardProgressText" class="text-xs text-slate-400">Từ 1 / 10</p>
+          </div>
+        </div>
+        <button id="closeFlashcardBtn" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Flashcard Flip Area -->
+      <div class="py-6 flex-1 flex flex-col items-center justify-center min-h-[280px]">
+        <div id="flashcardCard" class="w-full h-64 cursor-pointer perspective-1000 group">
+          <div id="flashcardInner" class="w-full h-full relative transform-style-3d transition-transform duration-500 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-800">
+            
+            <!-- Front Face (English Word + Audio) -->
+            <div class="absolute inset-0 backface-hidden p-6 rounded-3xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 flex flex-col items-center justify-center text-center">
+              <span id="fcFrontPos" class="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 mb-2">noun</span>
+              <h2 id="fcFrontWord" class="text-3xl font-extrabold text-slate-900 dark:text-slate-50 mb-2">resilience</h2>
+              <p id="fcFrontPhonetic" class="font-mono text-sm text-slate-500 dark:text-slate-400 mb-4">/rɪˈzɪl.jəns/</p>
+              <button id="fcPlayAudioBtn" class="p-3 rounded-full bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-300 hover:scale-110 transition shadow-sm" title="Phát âm">
+                <i data-lucide="volume-2" class="w-5 h-5"></i>
+              </button>
+              <span class="mt-4 text-[11px] text-slate-400">Chạm để lật xem nghĩa & ví dụ 🔄</span>
+            </div>
+
+            <!-- Back Face (Vietnamese Meaning + Example) -->
+            <div class="absolute inset-0 backface-hidden rotate-y-180 p-6 rounded-3xl bg-gradient-to-br from-indigo-50/70 to-white dark:from-slate-900 dark:to-indigo-950/40 flex flex-col items-center justify-center text-center">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2">Ý nghĩa</span>
+              <h3 id="fcBackMeaning" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 max-w-xs">Khả năng phục hồi, tính kiên cường</h3>
+              <p id="fcBackExample" class="text-xs text-slate-600 dark:text-slate-300 italic max-w-sm mb-4">"She showed great resilience in overcoming her illness."</p>
+              <span class="text-[11px] text-slate-400">Chạm để lật lại mặt trước 🔄</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Flashcard Controls -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+        <button id="fcPrevBtn" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Trước
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="fcKnowBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition flex items-center gap-1 shadow-sm">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i> Đã nhớ
+          </button>
+        </div>
+        <button id="fcNextBtn" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1">
+          Sau <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Scripts -->
+  <script src="sample-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
