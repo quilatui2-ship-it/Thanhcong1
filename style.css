@@ -128,3 +128,12 @@ button, a, input, select {
 .word-chip:hover {
   transform: translateY(-1px);
 }
+
+/* Hide hosting badges injected into the page by Netlify. */
+#netlify-badge,
+.netlify-badge,
+[data-netlify-badge],
+iframe[src*="netlify"],
+a[href*="netlify.com"] {
+  display: none !important;
+}
