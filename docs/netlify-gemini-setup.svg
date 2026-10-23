@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760" viewBox="0 0 1000 760" role="img" aria-labelledby="title desc">
+  <title id="title">Cài Gemini API cho Netlify</title>
+  <desc id="desc">Thêm GEMINI_API_KEY trong Netlify Production context, tạo biến, triển khai website rồi kiểm tra kết nối.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef2ff"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#334155" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <rect width="1000" height="760" rx="28" fill="url(#bg)"/>
+  <text x="54" y="70" fill="#1e1b4b" font-family="Segoe UI,Arial,sans-serif" font-size="31" font-weight="700">Bật Gemini AI trên Netlify</text>
+  <text x="55" y="105" fill="#475569" font-family="Segoe UI,Arial,sans-serif" font-size="17">Làm một lần cho Production — không dán key vào code hoặc chat</text>
+
+  <rect x="48" y="135" width="904" height="465" rx="20" fill="#fff" filter="url(#shadow)"/>
+  <rect x="48" y="135" width="904" height="55" rx="20" fill="#f8fafc"/>
+  <path d="M48 170v20h904v-20" fill="#f8fafc"/>
+  <text x="78" y="170" fill="#334155" font-family="Segoe UI,Arial,sans-serif" font-size="18" font-weight="600">Site configuration  ›  Environment variables  ›  Add a variable</text>
+
+  <text x="82" y="234" fill="#64748b" font-family="Segoe UI,Arial,sans-serif" font-size="15">Key / Name</text>
+  <rect x="82" y="246" width="834" height="49" rx="8" fill="#fff" stroke="#94a3b8" stroke-width="2"/>
+  <text x="101" y="278" fill="#0f172a" font-family="Consolas,monospace" font-size="18" font-weight="700">GEMINI_API_KEY</text>
+  <text x="82" y="331" fill="#64748b" font-family="Segoe UI,Arial,sans-serif" font-size="15">Values</text>
+  <circle cx="96" cy="366" r="9" fill="#fff" stroke="#94a3b8" stroke-width="2"/>
+  <text x="117" y="372" fill="#475569" font-family="Segoe UI,Arial,sans-serif" font-size="16">Same value for all deploy contexts</text>
+  <circle cx="96" cy="410" r="9" fill="#0d9488"/>
+  <circle cx="96" cy="410" r="4" fill="#fff"/>
+  <text x="117" y="416" fill="#0f172a" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="600">Different value for each deploy context</text>
+
+  <text x="117" y="457" fill="#334155" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="600">Production  ← DÁN API KEY MỚI VÀO ĐÂY</text>
+  <rect x="112" y="467" width="781" height="48" rx="8" fill="#f0fdfa" stroke="#0d9488" stroke-width="3"/>
+  <text x="130" y="497" fill="#0f766e" font-family="Segoe UI,Arial,sans-serif" font-size="16">••••••••••••••••••••••••••••••••••</text>
+  <rect x="112" y="523" width="781" height="39" rx="7" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="130" y="548" fill="#64748b" font-family="Segoe UI,Arial,sans-serif" font-size="14">Deploy Previews (để trống nếu không dùng)</text>
+  <rect x="112" y="569" width="781" height="0" rx="7" fill="#fff"/>
+
+  <path d="M910 490h34v-96h-15" fill="none" stroke="#0d9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m934 389-8 5 8 5" fill="none" stroke="#0d9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="82" y="617" width="194" height="48" rx="10" fill="#0d9488"/>
+  <text x="179" y="647" text-anchor="middle" fill="#fff" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="700">Create variable</text>
+  <text x="305" y="647" fill="#475569" font-family="Segoe UI,Arial,sans-serif" font-size="16">→  Deploys → Trigger deploy → Deploy site</text>
+
+  <rect x="48" y="688" width="904" height="48" rx="12" fill="#e0e7ff"/>
+  <text x="70" y="718" fill="#3730a3" font-family="Segoe UI,Arial,sans-serif" font-size="16" font-weight="600">Deploy xong: mở website Netlify → Cài đặt API → Kiểm tra kết nối</text>
+</svg>

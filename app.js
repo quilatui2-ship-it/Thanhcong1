@@ -148,7 +148,7 @@ async function fetchWordFromAI(word, forceRefresh = false) {
     }
   } catch (err) {
     console.error('Lookup error:', err);
-    showToast(`Có lỗi khi tra từ: ${err.message}`, 'error');
+    showToast(`Có lỗi khi tra từ: ${getApiErrorMessage(err)}`, 'error');
   } finally {
     setSearchLoading(false);
   }
@@ -1320,14 +1320,31 @@ async function testAPIKeyConnection() {
       statusEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 shrink-0"></i> <span>Kết nối Gemini thành công qua máy chủ (mô hình <b>${escapeHtml(model)}</b>).</span>`;
     } else {
       statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800';
-      statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Thất bại: ${escapeHtml(result.error || `HTTP ${response.status}`)}</span>`;
+      const error = new Error(result.error || `HTTP ${response.status}`);
+      error.status = response.status;
+      error.code = result.code;
+      statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>${escapeHtml(getApiErrorMessage(error))}</span>`;
     }
   } catch (err) {
     statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800';
-    statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Không kết nối được máy chủ AI: ${escapeHtml(err.message)}</span>`;
+    statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>${escapeHtml(getApiErrorMessage(err))}</span>`;
   }
 
   initLucide();
+}
+
+function getApiErrorMessage(error) {
+  if (error.code === 'MISSING_API_KEY') {
+    if (window.location.protocol === 'file:') {
+      return 'Đừng mở index.html trực tiếp. Chạy start.bat để dùng máy chủ local, hoặc mở website đã deploy trên Netlify.';
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'Chưa cấu hình GEMINI_API_KEY trên máy này. Thêm biến môi trường Windows rồi khởi động lại start.bat.';
+    }
+    return 'Netlify chưa nhận GEMINI_API_KEY: đặt key trong Environment variables cho Production, lưu lại rồi Trigger deploy mới.';
+  }
+
+  return error.message || 'Lỗi kết nối không xác định.';
 }
 
 function setSearchLoading(isLoading) {
