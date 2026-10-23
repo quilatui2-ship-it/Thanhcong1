@@ -445,7 +445,7 @@
           </div>
           <div>
             <h3 class="font-bold text-slate-900 dark:text-slate-100">Cấu hình Gemini AI</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Thiết lập API key và mô hình dịch thuật</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Kết nối Gemini thông qua máy chủ bảo mật</p>
           </div>
         </div>
         <button id="closeSettingsBtn" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
@@ -454,27 +454,9 @@
       </div>
 
       <div class="space-y-4 py-4">
-        <!-- API Key Input -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Gemini API Key</label>
-          <div class="relative">
-            <input 
-              type="password" 
-              id="apiKeyInput" 
-              placeholder="Dán mã API key của bạn vào đây..." 
-              class="w-full pl-3 pr-20 py-2.5 text-xs font-mono rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-brand-500 focus:outline-none transition"
-            >
-            <button type="button" id="toggleApiKeyVisibility" class="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Ẩn/Hiện">
-              <i data-lucide="eye" class="w-4 h-4"></i>
-            </button>
-            <button type="button" id="pasteApiKeyBtn" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-600 dark:text-brand-400 hover:underline text-[11px] font-semibold px-1" title="Dán từ Clipboard">
-              Dán
-            </button>
-          </div>
-          <p class="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
-            <i data-lucide="info" class="w-3.5 h-3.5 text-brand-500 shrink-0"></i>
-            <span>Key được lưu an toàn tại máy bạn (LocalStorage). Nếu chưa có key, bạn có thể lấy tại <a href="https://aistudio.google.com/" target="_blank" class="text-brand-600 underline">Google AI Studio</a>.</span>
-          </p>
+        <div class="p-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 border border-brand-100 dark:border-brand-900/60">
+          <p class="text-xs font-semibold text-brand-900 dark:text-brand-200">API key được giữ ở máy chủ, không gửi xuống trình duyệt.</p>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1">Đặt biến môi trường <code class="font-mono">GEMINI_API_KEY</code> trên máy chạy local hoặc trong Netlify → Site configuration → Environment variables. Sau đó nhấn “Kiểm tra kết nối”.</p>
         </div>
 
         <!-- AI Model Selection -->

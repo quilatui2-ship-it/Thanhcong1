@@ -13,8 +13,6 @@ const STATE = {
   audioSpeed: 1.0,
   defaultVoiceAccent: 'en-US',
   selectedModel: 'gemini-3.1-flash-lite',
-  apiKey: '',
-  pendingLookupWord: null,
   isSidebarOpen: true,
   flashcardIndex: 0,
   flashcardWords: [],
@@ -25,7 +23,6 @@ const STATE = {
 // Storage Keys
 const STORAGE_KEYS = {
   HISTORY: 'vocab_ai_history_v1',
-  API_KEY: 'vocab_ai_api_key',
   MODEL: 'vocab_ai_model',
   THEME: 'vocab_ai_theme',
   VOICE_ACCENT: 'vocab_ai_voice_accent'
@@ -60,8 +57,7 @@ function initLucide() {
 }
 
 function loadSettings() {
-  STATE.apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
-
+  localStorage.removeItem('vocab_ai_api_key');
   let savedModel = localStorage.getItem(STORAGE_KEYS.MODEL);
   if (!savedModel || savedModel.includes('2.5') || savedModel.includes('2.0')) {
     savedModel = 'gemini-3.1-flash-lite';
@@ -71,10 +67,6 @@ function loadSettings() {
 
   const savedAccent = localStorage.getItem(STORAGE_KEYS.VOICE_ACCENT);
   if (savedAccent) STATE.defaultVoiceAccent = savedAccent;
-
-  // Sync with Settings Modal inputs
-  const apiKeyInput = document.getElementById('apiKeyInput');
-  if (apiKeyInput) apiKeyInput.value = STATE.apiKey;
 
   const modelSelect = document.getElementById('modelSelect');
   if (modelSelect) modelSelect.value = STATE.selectedModel;
@@ -113,18 +105,6 @@ async function fetchWordFromAI(word, forceRefresh = false) {
   const cleanWord = word.trim().toLowerCase();
   if (!cleanWord) return;
 
-  if (!STATE.apiKey.trim()) {
-    STATE.pendingLookupWord = cleanWord;
-    openSettingsModal();
-    const statusEl = document.getElementById('apiTestStatus');
-    statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800';
-    statusEl.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i><span>Nhập và lưu API key để bắt đầu dịch từ này. Sau khi lưu, ứng dụng sẽ tự tiếp tục.</span>';
-    statusEl.classList.remove('hidden');
-    initLucide();
-    document.getElementById('apiKeyInput').focus();
-    return;
-  }
-
   // 1. FAST LOCAL CACHE CHECK (0ms)
   const cached = STATE.history.find(w => w.word.toLowerCase() === cleanWord) ||
                  (window.SAMPLE_WORDS || []).find(w => w.word.toLowerCase() === cleanWord);
@@ -143,13 +123,12 @@ async function fetchWordFromAI(word, forceRefresh = false) {
   try {
     let result = null;
 
-    // Step 1: Try Gemini AI if key available
-    if (STATE.apiKey && STATE.apiKey.trim() !== '') {
-      try {
-        result = await callGeminiAPI(cleanWord);
-      } catch (geminiError) {
-        console.warn('Gemini failed:', geminiError.message);
-      }
+    // Step 1: Try the server-side Gemini proxy
+    try {
+      result = await callGeminiAPI(cleanWord);
+    } catch (geminiError) {
+      console.warn('Gemini failed:', geminiError.message);
+      if (geminiError.code === 'MISSING_API_KEY' || geminiError.status === 403) throw geminiError;
     }
 
     // Step 2: If Gemini failed, use Free Dictionary API
@@ -179,28 +158,12 @@ async function fetchWordFromAI(word, forceRefresh = false) {
  * Call Google Gemini Generative Language API
  */
 async function callGeminiAPI(word) {
-  const apiKey = STATE.apiKey.trim();
   let model = STATE.selectedModel || 'gemini-3.1-flash-lite';
   // Filter out retired models
   if (model.includes('2.5') || model.includes('2.0') || model.includes('1.5')) {
     model = 'gemini-3.1-flash-lite';
   }
 
-  // Prompt bao gồm schema ngay trong user message để không cần systemInstruction
-  const prompt = `Bạn là từ điển Anh-Việt. Phân tích từ vựng tiếng Anh: "${word}"
-
-Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, không text thừa):
-{"word":"${word}","phonetic_uk":"/IPA/","phonetic_us":"/IPA/","part_of_speech":"noun","cefr_level":"B1","meanings":[{"pos":"noun","definition_vi":"Nghĩa tiếng Việt","definition_en":"English definition","examples":[{"en":"Example sentence.","vi":"Câu dịch tiếng Việt."}]}],"word_family":{"noun":["..."],"verb":["..."],"adjective":["..."],"adverb":["..."]},"synonyms":["...","..."],"antonyms":["..."],"collocations":[{"phrase":"...","meaning_vi":"..."}],"memory_tip":"Mẹo nhớ từ ngắn gọn"}`;
-
-  const requestBody = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 900
-    }
-  };
-
-  // Các model theo thứ tự ưu tiên (đã xác nhận hoạt động với key này)
   const candidateModels = [
     model,
     'gemini-flash-lite-latest',
@@ -217,15 +180,12 @@ Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, k
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
-
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ word, model: currentModel }),
         signal: controller.signal
       });
 
@@ -233,8 +193,14 @@ Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, k
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errMsg = errorData.error?.message || `HTTP ${response.status}`;
+        const errMsg = typeof errorData.error === 'string'
+          ? errorData.error
+          : errorData.error?.message || `HTTP ${response.status}`;
         lastError = new Error(errMsg);
+        lastError.status = response.status;
+        lastError.code = errorData.code;
+
+        if (lastError.code === 'MISSING_API_KEY') throw lastError;
 
         const isModelError = errMsg.includes('no longer available') ||
           errMsg.includes('not found') ||
@@ -251,7 +217,7 @@ Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, k
       }
 
       const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = data.text;
 
       if (!rawText) {
         lastError = new Error('API không trả về nội dung');
@@ -1260,71 +1226,34 @@ function bindEvents() {
   });
 
   document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-    STATE.pendingLookupWord = null;
     settingsModal.classList.add('hidden');
-  });
-
-  document.getElementById('toggleApiKeyVisibility').addEventListener('click', () => {
-    const input = document.getElementById('apiKeyInput');
-    input.type = input.type === 'password' ? 'text' : 'password';
-  });
-
-  document.getElementById('pasteApiKeyBtn').addEventListener('click', async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        document.getElementById('apiKeyInput').value = text.trim();
-        showToast('Đã dán key từ clipboard!', 'info');
-      }
-    } catch {
-      showToast('Vui lòng cấp quyền clipboard hoặc dán bằng Ctrl+V.', 'warning');
-    }
   });
 
   document.getElementById('testApiKeyBtn').addEventListener('click', testAPIKeyConnection);
 
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (!key) {
-      showToast('Nhập API key trước khi lưu để dịch bằng Gemini.', 'warning');
-      document.getElementById('apiKeyInput').focus();
-      return;
-    }
-
     const model = document.getElementById('modelSelect').value;
     const accentRadio = document.querySelector('input[name="accentVoice"]:checked');
     const accent = accentRadio ? accentRadio.value : 'en-US';
 
-    STATE.apiKey = key;
     STATE.selectedModel = model;
     STATE.defaultVoiceAccent = accent;
 
-    localStorage.setItem(STORAGE_KEYS.API_KEY, key);
     localStorage.setItem(STORAGE_KEYS.MODEL, model);
     localStorage.setItem(STORAGE_KEYS.VOICE_ACCENT, accent);
 
     settingsModal.classList.add('hidden');
     showToast('Cài đặt đã được lưu thành công!', 'success');
 
-    const pendingWord = STATE.pendingLookupWord;
-    STATE.pendingLookupWord = null;
-    if (pendingWord) {
-      document.getElementById('wordInput').value = pendingWord;
-      fetchWordFromAI(pendingWord, true);
-    }
   });
 
   document.getElementById('resetSettingsBtn').addEventListener('click', () => {
-    STATE.apiKey = '';
     STATE.selectedModel = 'gemini-3.1-flash-lite';
     STATE.defaultVoiceAccent = 'en-US';
 
-    document.getElementById('apiKeyInput').value = STATE.apiKey;
     document.getElementById('modelSelect').value = STATE.selectedModel;
     document.querySelector('input[name="accentVoice"][value="en-US"]').checked = true;
 
-    document.getElementById('apiKeyInput').value = '';
-    localStorage.removeItem(STORAGE_KEYS.API_KEY);
     localStorage.setItem(STORAGE_KEYS.MODEL, 'gemini-3.1-flash-lite');
     localStorage.removeItem(STORAGE_KEYS.VOICE_ACCENT);
 
@@ -1343,7 +1272,6 @@ function bindEvents() {
   window.addEventListener('keydown', (e) => {
     // Esc closes modals
     if (e.key === 'Escape') {
-      STATE.pendingLookupWord = null;
       settingsModal.classList.add('hidden');
       closeFlashcardModal();
     }
@@ -1373,71 +1301,30 @@ function openSettingsModal() {
 
 async function testAPIKeyConnection() {
   const statusEl = document.getElementById('apiTestStatus');
-  const key = document.getElementById('apiKeyInput').value.trim();
   const model = document.getElementById('modelSelect').value;
 
-  if (!key) {
-    statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800';
-    statusEl.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i> Vui lòng nhập API Key trước khi kiểm tra.`;
-    statusEl.classList.remove('hidden');
-    initLucide();
-    return;
-  }
-
   statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
-  statusEl.innerHTML = `<div class="animate-spin w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full"></div> Đang kiểm tra kết nối với Google Gemini API...`;
+  statusEl.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full"></div> Đang kiểm tra kết nối với Gemini...';
   statusEl.classList.remove('hidden');
 
   try {
-    let testModels = [model, 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']
-      .filter(m => !m.includes('2.5') && !m.includes('2.0'));
-    testModels = [...new Set(testModels)];
+    const response = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'test', model })
+    });
+    const result = await response.json().catch(() => ({}));
 
-    let success = false;
-    let successfulModel = model;
-    let lastErrMsg = '';
-
-    for (const curModel of testModels) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': key
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "hi" }] }]
-        })
-      });
-
-      if (res.ok) {
-        success = true;
-        successfulModel = curModel;
-        break;
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        lastErrMsg = errData.error?.message || `HTTP ${res.status}`;
-        if (!lastErrMsg.includes('no longer available') && !lastErrMsg.includes('not found') && res.status !== 404) {
-          // If it's a real auth error (bad key), don't keep looping
-          break;
-        }
-      }
-    }
-
-    if (success) {
-      if (successfulModel !== model) {
-        document.getElementById('modelSelect').value = successfulModel;
-        STATE.selectedModel = successfulModel;
-        localStorage.setItem(STORAGE_KEYS.MODEL, successfulModel);
-      }
+    if (response.ok) {
       statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800';
-      statusEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 shrink-0"></i> <span>Kết nối thành công! Khóa API hoàn toàn hợp lệ (Đang dùng mô hình <b>${successfulModel}</b>).</span>`;
+      statusEl.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 shrink-0"></i> <span>Kết nối Gemini thành công qua máy chủ (mô hình <b>${escapeHtml(model)}</b>).</span>`;
     } else {
       statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800';
-      statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Thất bại: ${escapeHtml(lastErrMsg)}</span>`;
+      statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Thất bại: ${escapeHtml(result.error || `HTTP ${response.status}`)}</span>`;
     }
   } catch (err) {
     statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800';
-    statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Lỗi mạng hoặc CORS: ${escapeHtml(err.message)}</span>`;
+    statusEl.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-rose-500 shrink-0"></i> <span>Không kết nối được máy chủ AI: ${escapeHtml(err.message)}</span>`;
   }
 
   initLucide();

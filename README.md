@@ -49,11 +49,20 @@
 
 ## 🚀 Cách Sử Dụng
 
-### Cách 1: Chạy trực tiếp
-Nhấp đúp chuột vào file **`start.bat`** (hoặc mở file **`index.html`** bằng trình duyệt Google Chrome, Edge).
+### Chạy trên máy tính
+Gemini được gọi qua máy chủ cục bộ; không mở trực tiếp `index.html`.
 
-### Cách 2: Cấu hình Gemini API Key
-1. Lần đầu nhấn **Dịch với AI**, ứng dụng sẽ tự mở phần cài đặt nếu chưa có API Key.
-2. Dán API Key của bạn. Mã nguồn không chứa API Key mặc định.
-3. Nhấp **"Kiểm tra kết nối"** để xác thực, sau đó bấm **"Lưu cài đặt"**. Ứng dụng sẽ tự tiếp tục dịch từ đang chờ; API Key được lưu trong LocalStorage của trình duyệt.
-*(Lưu ý: API Key được lưu riêng trong trình duyệt này, không được đưa vào mã nguồn. Nếu Gemini không khả dụng sau khi cấu hình, ứng dụng sẽ thử từ điển dự phòng.)*
+1. Tạo API key tại [Google AI Studio](https://aistudio.google.com/).
+2. Mở PowerShell và thiết lập key một lần cho tài khoản Windows của bạn:
+   ```powershell
+   [Environment]::SetEnvironmentVariable("GEMINI_API_KEY", "YOUR_NEW_KEY", "User")
+   ```
+3. Đóng/mở lại terminal rồi chạy **`start.bat`**. Máy chủ chỉ lắng nghe trên máy tính của bạn (`127.0.0.1`); key không được gửi xuống trình duyệt hay lưu trong repository.
+4. Lần tra từ đầu tiên sẽ tự gọi Gemini 3.1 Flash-Lite ở chế độ nền. Có thể dùng **Cài đặt API → Kiểm tra kết nối** để xác nhận máy chủ.
+
+### Triển khai trên Netlify
+1. Trong Netlify, mở **Site configuration → Environment variables** và tạo `GEMINI_API_KEY` với một API key mới. Không ghi key trong file dự án hoặc gửi qua chat.
+2. Triển khai repository lên Netlify. `netlify.toml` định tuyến `/api/gemini` tới Netlify Function.
+3. Netlify Function chỉ chấp nhận Origin của site đã triển khai, giới hạn model và chỉ nhận từ/cụm từ để tự tạo prompt. Nếu dùng tên miền riêng, thêm danh sách origin (phân tách bằng dấu phẩy) trong biến `GEMINI_ALLOWED_ORIGINS`. Vì endpoint vẫn phục vụ người truy cập website, hãy đặt quota/budget cho API key trong Google AI Studio/Google Cloud và thu hồi key nếu bị lộ.
+
+Nếu key đã từng được gửi trong chat hoặc commit, hãy thu hồi key đó và tạo key mới trước khi cấu hình. Khi Gemini không khả dụng, ứng dụng sẽ thử từ điển dự phòng.
