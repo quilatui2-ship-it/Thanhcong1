@@ -14,6 +14,7 @@ const STATE = {
   defaultVoiceAccent: 'en-US',
   selectedModel: 'gemini-3.1-flash-lite',
   apiKey: '',
+  pendingLookupWord: null,
   isSidebarOpen: true,
   flashcardIndex: 0,
   flashcardWords: [],
@@ -111,6 +112,18 @@ function updateThemeIcon(isDark) {
 async function fetchWordFromAI(word, forceRefresh = false) {
   const cleanWord = word.trim().toLowerCase();
   if (!cleanWord) return;
+
+  if (!STATE.apiKey.trim()) {
+    STATE.pendingLookupWord = cleanWord;
+    openSettingsModal();
+    const statusEl = document.getElementById('apiTestStatus');
+    statusEl.className = 'p-3 rounded-xl text-xs flex items-center gap-2 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800';
+    statusEl.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i><span>Nhập và lưu API key để bắt đầu dịch từ này. Sau khi lưu, ứng dụng sẽ tự tiếp tục.</span>';
+    statusEl.classList.remove('hidden');
+    initLucide();
+    document.getElementById('apiKeyInput').focus();
+    return;
+  }
 
   // 1. FAST LOCAL CACHE CHECK (0ms)
   const cached = STATE.history.find(w => w.word.toLowerCase() === cleanWord) ||
@@ -1243,10 +1256,11 @@ function bindEvents() {
   // Settings Modal Controls
   const settingsModal = document.getElementById('settingsModal');
   document.getElementById('openSettingsBtn').addEventListener('click', () => {
-    settingsModal.classList.remove('hidden');
+    openSettingsModal();
   });
 
   document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+    STATE.pendingLookupWord = null;
     settingsModal.classList.add('hidden');
   });
 
@@ -1271,6 +1285,12 @@ function bindEvents() {
 
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) {
+      showToast('Nhập API key trước khi lưu để dịch bằng Gemini.', 'warning');
+      document.getElementById('apiKeyInput').focus();
+      return;
+    }
+
     const model = document.getElementById('modelSelect').value;
     const accentRadio = document.querySelector('input[name="accentVoice"]:checked');
     const accent = accentRadio ? accentRadio.value : 'en-US';
@@ -1285,6 +1305,13 @@ function bindEvents() {
 
     settingsModal.classList.add('hidden');
     showToast('Cài đặt đã được lưu thành công!', 'success');
+
+    const pendingWord = STATE.pendingLookupWord;
+    STATE.pendingLookupWord = null;
+    if (pendingWord) {
+      document.getElementById('wordInput').value = pendingWord;
+      fetchWordFromAI(pendingWord, true);
+    }
   });
 
   document.getElementById('resetSettingsBtn').addEventListener('click', () => {
@@ -1316,6 +1343,7 @@ function bindEvents() {
   window.addEventListener('keydown', (e) => {
     // Esc closes modals
     if (e.key === 'Escape') {
+      STATE.pendingLookupWord = null;
       settingsModal.classList.add('hidden');
       closeFlashcardModal();
     }
@@ -1337,6 +1365,10 @@ function bindEvents() {
       }
     }
   });
+}
+
+function openSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('hidden');
 }
 
 async function testAPIKeyConnection() {

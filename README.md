@@ -53,7 +53,7 @@
 Nhấp đúp chuột vào file **`start.bat`** (hoặc mở file **`index.html`** bằng trình duyệt Google Chrome, Edge).
 
 ### Cách 2: Cấu hình Gemini API Key
-1. Nhấp vào nút **Cài đặt API** (⚙️) ở góc trên bên phải.
+1. Lần đầu nhấn **Dịch với AI**, ứng dụng sẽ tự mở phần cài đặt nếu chưa có API Key.
 2. Dán API Key của bạn. Mã nguồn không chứa API Key mặc định.
-3. Nhấp **"Kiểm tra kết nối"** để xác thực, sau đó bấm **"Lưu cài đặt"**.
-*(Lưu ý: Nếu chưa cấu hình key, ứng dụng vẫn hoạt động tốt nhờ kho từ vựng học thuật và từ điển dự phòng tích hợp sẵn).*
+3. Nhấp **"Kiểm tra kết nối"** để xác thực, sau đó bấm **"Lưu cài đặt"**. Ứng dụng sẽ tự tiếp tục dịch từ đang chờ; API Key được lưu trong LocalStorage của trình duyệt.
+*(Lưu ý: API Key được lưu riêng trong trình duyệt này, không được đưa vào mã nguồn. Nếu Gemini không khả dụng sau khi cấu hình, ứng dụng sẽ thử từ điển dự phòng.)*
