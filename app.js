@@ -120,8 +120,8 @@ async function fetchWordFromAI(word, forceRefresh = false) {
   const cleanWord = word.trim().toLowerCase();
   if (!cleanWord) return;
 
-  // 1. FAST LOCAL CACHE CHECK (0ms - Hiển thị tức thì nếu đã tra rồi)
-  const cached = STATE.history.find(w => w.word.toLowerCase() === cleanWord) || 
+  // 1. FAST LOCAL CACHE CHECK (0ms)
+  const cached = STATE.history.find(w => w.word.toLowerCase() === cleanWord) ||
                  (window.SAMPLE_WORDS || []).find(w => w.word.toLowerCase() === cleanWord);
 
   if (cached && !forceRefresh) {
@@ -135,49 +135,40 @@ async function fetchWordFromAI(word, forceRefresh = false) {
 
   setSearchLoading(true);
 
-  // 2. PARALLEL HYBRID STRATEGY:
-  // Gọi đồng thời Từ điển siêu tốc (~150ms) và Gemini AI (~800ms)
-  let isAiFinished = false;
-
-  // Chạy ngay từ điển nhanh để hiển thị ngay phiên âm & âm thanh trong ~150ms
-  const fastPromise = fallbackDictionaryLookup(cleanWord).then(fastResult => {
-    if (fastResult && !isAiFinished) {
-      fastResult.is_preview = true;
-      displayWordDetails(fastResult);
-    }
-    return fastResult;
-  }).catch(() => null);
-
   try {
     let result = null;
 
-    // Check if user has an API Key configured
+    // Step 1: Try Gemini AI if key available
     if (STATE.apiKey && STATE.apiKey.trim() !== '') {
       try {
         result = await callGeminiAPI(cleanWord);
       } catch (geminiError) {
-        console.warn('Gemini API call failed, falling back to fast dictionary:', geminiError);
+        console.warn('Gemini failed:', geminiError.message);
       }
     }
 
-    // Fallback: If Gemini API fails or has no key, use Fast Dictionary result
+    // Step 2: If Gemini failed, use Free Dictionary API
     if (!result) {
-      result = await fastPromise;
+      result = await fallbackDictionaryLookup(cleanWord);
     }
 
     if (result) {
-      isAiFinished = true;
       result.is_preview = false;
       saveWordToHistory(result);
       displayWordDetails(result);
       showToast(`Đã tra xong từ "${result.word}"! ⚡`, 'success');
-      
-      // Clear input
       document.getElementById('wordInput').value = '';
       toggleClearInputBtn(false);
     } else {
       showToast(`Không tìm thấy dữ liệu cho từ "${cleanWord}". Vui lòng thử từ khác.`, 'error');
     }
+  } catch (err) {
+    console.error('Lookup error:', err);
+    showToast(`Có lỗi khi tra từ: ${err.message}`, 'error');
+  } finally {
+    setSearchLoading(false);
+  }
+}
   } catch (err) {
     console.error('Lookup error:', err);
     showToast(`Có lỗi khi tra từ: ${err.message}`, 'error');
@@ -188,74 +179,46 @@ async function fetchWordFromAI(word, forceRefresh = false) {
 }
 
 /**
- * Call Google Gemini Generative Language API (Tối ưu tốc độ cao)
+ * Call Google Gemini Generative Language API
  */
 async function callGeminiAPI(word) {
   const apiKey = STATE.apiKey.trim();
-  let model = STATE.selectedModel || 'gemini-3.8-flash';
-  if (model === 'gemini-2.5-flash') model = 'gemini-3.8-flash';
-  
-  const systemInstruction = `Từ điển Anh-Việt súc tích. Trả về DUY NHẤT một chuỗi JSON theo mẫu, không có markdown:
-{
-  "word": "từ",
-  "phonetic_uk": "/.../",
-  "phonetic_us": "/.../",
-  "part_of_speech": "noun | verb | adjective | adverb",
-  "cefr_level": "A1-C2",
-  "meanings": [
-    {
-      "pos": "từ loại",
-      "definition_vi": "Nghĩa tiếng Việt ngắn gọn, chuẩn xác",
-      "definition_en": "Concise English definition",
-      "examples": [
-        {"en": "English example sentence.", "vi": "Bản dịch tiếng Việt."}
-      ]
-    }
-  ],
-  "word_family": {
-    "noun": ["..."],
-    "verb": ["..."],
-    "adjective": ["..."],
-    "adverb": ["..."]
-  },
-  "synonyms": ["..."],
-  "antonyms": ["..."],
-  "collocations": [{"phrase": "...", "meaning_vi": "..."}],
-  "memory_tip": "Mẹo ghi nhớ 1 câu ngắn gọn"
-}`;
+  let model = STATE.selectedModel || 'gemini-flash-lite-latest';
+  // Filter out retired models
+  if (model.includes('2.5') || model.includes('2.0') || model.includes('1.5')) {
+    model = 'gemini-flash-lite-latest';
+  }
+
+  // Prompt bao gồm schema ngay trong user message để không cần systemInstruction
+  const prompt = `Bạn là từ điển Anh-Việt. Phân tích từ vựng tiếng Anh: "${word}"
+
+Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, không text thừa):
+{"word":"${word}","phonetic_uk":"/IPA/","phonetic_us":"/IPA/","part_of_speech":"noun","cefr_level":"B1","meanings":[{"pos":"noun","definition_vi":"Nghĩa tiếng Việt","definition_en":"English definition","examples":[{"en":"Example sentence.","vi":"Câu dịch tiếng Việt."}]}],"word_family":{"noun":["..."],"verb":["..."],"adjective":["..."],"adverb":["..."]},"synonyms":["...","..."],"antonyms":["..."],"collocations":[{"phrase":"...","meaning_vi":"..."}],"memory_tip":"Mẹo nhớ từ ngắn gọn"}`;
 
   const requestBody = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { text: `Phân tích từ vựng: "${word}"` }
-        ]
-      }
-    ],
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 750,
-      responseMimeType: "application/json"
+      maxOutputTokens: 900
     }
   };
 
-  requestBody.systemInstruction = {
-    parts: [{ text: systemInstruction }]
-  };
-
-  // Candidate models: prioritize gemini-flash-lite-latest (fastest & verified working)
-  const candidateModels = [model, 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']
-    .filter(m => !m.includes('2.5') && !m.includes('2.0'));
+  // Các model theo thứ tự ưu tiên (đã xác nhận hoạt động với key này)
+  const candidateModels = [
+    model,
+    'gemini-flash-lite-latest',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+    'gemini-3.8-flash'
+  ].filter(m => !m.includes('2.5') && !m.includes('2.0') && !m.includes('1.5'));
   const uniqueCandidates = [...new Set(candidateModels)];
 
   let lastError = null;
 
   for (const currentModel of uniqueCandidates) {
     try {
-      // 6.5 second timeout to prevent user waiting
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6500);
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
 
@@ -273,10 +236,17 @@ async function callGeminiAPI(word) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errMsg = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+        const errMsg = errorData.error?.message || `HTTP ${response.status}`;
         lastError = new Error(errMsg);
 
-        if (errMsg.includes('no longer available') || errMsg.includes('not found') || response.status === 404) {
+        const isModelError = errMsg.includes('no longer available') ||
+          errMsg.includes('not found') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('service_unavailable') ||
+          response.status === 404 || response.status === 503;
+
+        if (isModelError) {
+          console.warn(`Model ${currentModel} unavailable, trying next...`);
           continue;
         } else {
           throw lastError;
@@ -285,11 +255,13 @@ async function callGeminiAPI(word) {
 
       const data = await response.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
+
       if (!rawText) {
-        throw new Error('Gemini API không trả về nội dung.');
+        lastError = new Error('API không trả về nội dung');
+        continue;
       }
 
+      // Update working model for next time
       if (currentModel !== STATE.selectedModel) {
         STATE.selectedModel = currentModel;
         localStorage.setItem(STORAGE_KEYS.MODEL, currentModel);
@@ -297,10 +269,14 @@ async function callGeminiAPI(word) {
         if (sel) sel.value = currentModel;
       }
 
+      // Parse JSON (strip markdown if present)
       let cleanedText = rawText.trim();
-      if (cleanedText.startsWith('```')) {
-        cleanedText = cleanedText.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+      if (cleanedText.includes('```')) {
+        cleanedText = cleanedText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
       }
+      // Extract first JSON object if extra text present
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleanedText = jsonMatch[0];
 
       const parsed = JSON.parse(cleanedText);
       parsed.source = 'gemini';
@@ -309,13 +285,17 @@ async function callGeminiAPI(word) {
 
     } catch (e) {
       lastError = e;
-      if (!e.message.includes('no longer available') && !e.message.includes('not found')) {
-        throw e;
-      }
+      const isRetryable = e.name === 'AbortError' ||
+        (e.message && (e.message.includes('no longer available') ||
+          e.message.includes('not found') ||
+          e.message.includes('high demand')));
+      if (!isRetryable) throw e;
+      console.warn(`Model ${currentModel} failed (${e.message}), retrying next...`);
     }
   }
 
-  throw lastError || new Error('Không thể kết nối tới mô hình AI.');
+  throw lastError || new Error('Không thể kết nối đến AI.');
+}
 }
 
 /**
