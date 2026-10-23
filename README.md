@@ -54,6 +54,6 @@ Nhấp đúp chuột vào file **`start.bat`** (hoặc mở file **`index.html`*
 
 ### Cách 2: Cấu hình Gemini API Key
 1. Nhấp vào nút **Cài đặt API** (⚙️) ở góc trên bên phải.
-2. Dán mã API Key của bạn (mã đã được điền sẵn theo key bạn cung cấp).
+2. Dán API Key của bạn. Mã nguồn không chứa API Key mặc định.
 3. Nhấp **"Kiểm tra kết nối"** để xác thực, sau đó bấm **"Lưu cài đặt"**.
 *(Lưu ý: Nếu chưa cấu hình key, ứng dụng vẫn hoạt động tốt nhờ kho từ vựng học thuật và từ điển dự phòng tích hợp sẵn).*

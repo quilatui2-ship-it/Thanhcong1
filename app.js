@@ -4,9 +4,6 @@
  * Word Family Linking, Flashcards, and Local Storage.
  */
 
-// Built-in Default Gemini Key (Decoded at runtime so GitHub secret scanning does not block git push)
-const BUILTIN_DEFAULT_KEY = atob('QVEuQWI4Uk42S3lVWFc3OWNoWjI4WWs0ZnhTcFJTQTREUjdJYm5xMS1RUU9MQzdpM3ZHZHc=');
-
 // Global State
 const STATE = {
   currentWord: null,
@@ -16,7 +13,7 @@ const STATE = {
   audioSpeed: 1.0,
   defaultVoiceAccent: 'en-US',
   selectedModel: 'gemini-flash-lite-latest',
-  apiKey: BUILTIN_DEFAULT_KEY,
+  apiKey: '',
   isSidebarOpen: true,
   flashcardIndex: 0,
   flashcardWords: [],
@@ -61,13 +58,7 @@ function initLucide() {
 }
 
 function loadSettings() {
-  let savedKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
-  // Auto-upgrade from empty or old revoked key to the new working key
-  if (!savedKey || savedKey.includes('J06qKigAnbl64Y') || savedKey.length < 15) {
-    savedKey = BUILTIN_DEFAULT_KEY;
-    localStorage.setItem(STORAGE_KEYS.API_KEY, savedKey);
-  }
-  STATE.apiKey = savedKey;
+  STATE.apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
 
   let savedModel = localStorage.getItem(STORAGE_KEYS.MODEL);
   if (!savedModel || savedModel.includes('2.5') || savedModel.includes('2.0')) {
@@ -169,14 +160,6 @@ async function fetchWordFromAI(word, forceRefresh = false) {
     setSearchLoading(false);
   }
 }
-  } catch (err) {
-    console.error('Lookup error:', err);
-    showToast(`Có lỗi khi tra từ: ${err.message}`, 'error');
-  } finally {
-    isAiFinished = true;
-    setSearchLoading(false);
-  }
-}
 
 /**
  * Call Google Gemini Generative Language API
@@ -220,7 +203,7 @@ Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, k
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`;
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -295,7 +278,6 @@ Trả về DUY NHẤT một JSON hợp lệ (không markdown, không backtick, k
   }
 
   throw lastError || new Error('Không thể kết nối đến AI.');
-}
 }
 
 /**
@@ -1279,7 +1261,7 @@ function bindEvents() {
   });
 
   document.getElementById('resetSettingsBtn').addEventListener('click', () => {
-    STATE.apiKey = BUILTIN_DEFAULT_KEY;
+    STATE.apiKey = '';
     STATE.selectedModel = 'gemini-flash-lite-latest';
     STATE.defaultVoiceAccent = 'en-US';
 
@@ -1287,7 +1269,8 @@ function bindEvents() {
     document.getElementById('modelSelect').value = STATE.selectedModel;
     document.querySelector('input[name="accentVoice"][value="en-US"]').checked = true;
 
-    localStorage.setItem(STORAGE_KEYS.API_KEY, BUILTIN_DEFAULT_KEY);
+    document.getElementById('apiKeyInput').value = '';
+    localStorage.removeItem(STORAGE_KEYS.API_KEY);
     localStorage.setItem(STORAGE_KEYS.MODEL, 'gemini-flash-lite-latest');
     localStorage.removeItem(STORAGE_KEYS.VOICE_ACCENT);
 
@@ -1356,7 +1339,7 @@ async function testAPIKeyConnection() {
     let lastErrMsg = '';
 
     for (const curModel of testModels) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent?key=${key}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
