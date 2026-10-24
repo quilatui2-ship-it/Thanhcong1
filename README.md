@@ -60,8 +60,14 @@ Gemini được gọi qua máy chủ cục bộ; không mở trực tiếp `inde
 3. Đóng/mở lại terminal rồi chạy **`start.bat`**. Máy chủ chỉ lắng nghe trên máy tính của bạn (`127.0.0.1`); key không được gửi xuống trình duyệt hay lưu trong repository.
 4. Lần tra từ đầu tiên sẽ tự gọi Gemini 3.1 Flash-Lite ở chế độ nền. Có thể dùng **Cài đặt API → Kiểm tra kết nối** để xác nhận máy chủ.
 
-### Khuyên dùng khi chia sẻ website: Cloudflare Worker
-Website vẫn có thể nằm trên Netlify; chỉ phần gọi Gemini chạy qua Worker để giữ API key ở server.
+### Dùng API key cá nhân để kiểm tra nhanh
+1. Mở **Cài đặt API**, dán API key Gemini của bạn rồi chọn **Kiểm tra kết nối**.
+2. Nếu kết nối thành công, bấm **Lưu cài đặt**. Key được lưu trong LocalStorage của trình duyệt này và các lần tra từ sẽ gọi Gemini trực tiếp.
+
+Chế độ này phù hợp để thử nghiệm cá nhân. Key tồn tại trong trình duyệt và request đi từ trình duyệt tới Google, nên **không chia sẻ website với key của bạn đã lưu**. Người khác không tự dùng key của bạn; họ cần nhập key riêng. Thu hồi key ngay nếu bị lộ.
+
+### Dùng AI an toàn khi chia sẻ website: Cloudflare Worker
+Website vẫn có thể nằm trên Netlify; chỉ phần gọi Gemini chạy qua Worker để giữ API key ở server. Khi đã cấu hình Worker, để trống ô API key trong cài đặt để ứng dụng dùng Worker.
 
 1. Cloudflare Dashboard → **Workers & Pages → Create → Create Worker**. Tạo Worker tên, ví dụ `vocab-gemini-api`.
 2. Mở Worker → **Edit code**. Thay nội dung bằng toàn bộ file [`cloudflare/worker.mjs`](./cloudflare/worker.mjs), rồi **Deploy**.
@@ -74,7 +80,7 @@ Website vẫn có thể nằm trên Netlify; chỉ phần gọi Gemini chạy qu
    ```js
    window.VOCAB_GEMINI_API_URL = 'https://vocab-gemini-api.ten-tai-khoan.workers.dev/api/gemini';
    ```
-6. Commit/push lên GitHub để Netlify tự deploy trang với endpoint mới. Deploy xong, mở website → **Cài đặt API → Kiểm tra kết nối**.
+6. Commit/push lên GitHub để Netlify tự deploy trang với endpoint mới. Deploy xong, để trống ô API key rồi mở website → **Cài đặt API → Kiểm tra kết nối**.
 
 Worker giới hạn model, kiểm tra origin và định dạng từ/cụm từ. Giới hạn trong bộ nhớ của Worker chỉ là lớp giảm tải cơ bản; hãy bật Cloudflare rate limiting phù hợp và đặt quota/budget cho Gemini API để bảo vệ khỏi lạm dụng. Nếu UI báo lỗi, Worker trả nội dung lỗi Gemini để dễ phân biệt lỗi key, quota, model hay kết nối.
 
